@@ -1,0 +1,15 @@
+{
+  "input": "testdata/corpus.zip!/yzm1/yzm1.png",
+  "source": "https://github.com/sml2h3/ddddocr (samples/yzm1.png)",
+  "ddddocr": "1.5.6",
+  "pillow": "13.0.0",
+  "preprocessing": "resize(height=64, LANCZOS), convert L, /255, then (x-0.5)/0.5; shape [1,1,64,width]",
+  "shape": [
+    1,
+    1,
+    64,
+    189
+  ],
+  "dtype": "float32-le",
+  "sha256": "bf07db4b9287ea1971a09213d4f64573dbd3561818cbe0cb88a652718cb7c959"
+}

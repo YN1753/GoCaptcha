@@ -1,0 +1,97 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: build-${{ matrix.goos }}-${{ matrix.goarch }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14
+            goos: darwin
+            goarch: arm64
+            assets_dir: darwin_arm64
+          - os: macos-14
+            goos: darwin
+            goarch: amd64
+            assets_dir: darwin_amd64
+          - os: ubuntu-24.04
+            goos: linux
+            goarch: amd64
+            assets_dir: linux_amd64
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.x'
+          cache: true
+
+      - name: Resolve version
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+
+      - name: Build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: '0'
+        run: |
+          mkdir -p package/LICENSES
+          go build -trimpath \
+            -ldflags "-s -w -X main.version=${VERSION}" \
+            -o package/ddddocr ./cmd/ddddocr
+          cp README.md LICENSE THIRD_PARTY_NOTICES.md package/
+          cp -R LICENSES/. package/LICENSES/
+          cp "internal/runtime/assets/${{ matrix.assets_dir }}/LICENSE" \
+            "package/LICENSES/onnxruntime-${{ matrix.goos }}-${{ matrix.goarch }}-LICENSE.txt"
+          cp "internal/runtime/assets/${{ matrix.assets_dir }}/ThirdPartyNotices.txt" \
+            "package/LICENSES/onnxruntime-${{ matrix.goos }}-${{ matrix.goarch }}-ThirdPartyNotices.txt"
+          tar -C package -czf "gocaptcha-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz" .
+
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: gocaptcha-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: gocaptcha-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
+          if-no-files-found: error
+          retention-days: 7
+
+  release:
+    name: publish-release
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download packages
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Checksums
+        run: |
+          cd dist
+          sha256sum *.tar.gz > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            dist/*.tar.gz dist/SHA256SUMS \
+            --title "GoCaptcha $GITHUB_REF_NAME" \
+            --notes-file .github/release-notes.md \
+            --prerelease
