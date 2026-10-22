@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -36,7 +37,12 @@ func EnsureCurrent() (string, error) {
 	return extract(a, root)
 }
 
+var cacheExtractMu sync.Mutex
+
 func extract(a asset, cacheRoot string) (string, error) {
+	cacheExtractMu.Lock()
+	defer cacheExtractMu.Unlock()
+
 	if cacheRoot == "" {
 		return "", errors.New("运行时缓存目录为空")
 	}
@@ -162,7 +168,7 @@ func acquireLock(directory string) (func(), error) {
 		if err == nil {
 			return func() { _ = os.Remove(lockPath) }, nil
 		}
-		if !errors.Is(err, os.ErrExist) {
+		if !errors.Is(err, os.ErrExist) && !errors.Is(err, os.ErrPermission) {
 			// Windows can report access denied while another process is
 			// creating the lock; only fail if the lock path really is absent.
 			if _, statErr := os.Stat(lockPath); statErr != nil {
