@@ -156,13 +156,18 @@ func acquireLock(directory string) (func(), error) {
 	lockPath := filepath.Join(directory, ".lock")
 	deadline := time.Now().Add(30 * time.Second)
 	for {
-		file, err := os.OpenFile(lockPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
+		// A directory is used as the lock: mkdir is atomic on all supported
+		// platforms and does not hold an open file handle on Windows.
+		err := os.Mkdir(lockPath, 0o700)
 		if err == nil {
-			file.Close()
 			return func() { _ = os.Remove(lockPath) }, nil
 		}
 		if !errors.Is(err, os.ErrExist) {
-			return nil, err
+			// Windows can report access denied while another process is
+			// creating the lock; only fail if the lock path really is absent.
+			if _, statErr := os.Stat(lockPath); statErr != nil {
+				return nil, err
+			}
 		}
 		if info, statErr := os.Stat(lockPath); statErr == nil && time.Since(info.ModTime()) > 30*time.Second {
 			_ = os.Remove(lockPath)
