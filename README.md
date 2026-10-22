@@ -19,12 +19,12 @@ GoCaptcha 是 [ddddocr](https://github.com/sml2h3/ddddocr) 默认验证码识别
 | macOS x64 | 已验证（Rosetta） | 195/201 一致，145/201 准确率；物理 Intel 未测 |
 | Linux x64 | 已验证 | Ubuntu 24.04 原生验证；196/201 一致，146/201 准确率；glibc 2.27+ |
 | Linux ARM64 | 已打包，未验证 | 交叉构建，尚未在 ARM64 Linux 上真实运行 |
-| Windows x64 | 已打包，未验证 | 依赖系统 VC++ 运行库；CI 构建/冒烟不等同干净机器验收 |
+| Windows x64 | 已打包，CI 测试通过 | 依赖系统 VC++ 运行库；尚未完成独立干净 Windows/VC 环境验收 |
 | Windows ARM64 | 已打包，未验证 | 仅交叉构建，尚未真实运行 |
 
 验收测试使用 201 张带标签的验证码，数据集来源和已知差异见 [testdata/README.md](testdata/README.md)。
 
-Windows 构建当前**没有内置 VC++ 运行库**，运行前需要目标机器已安装 Microsoft Visual C++ 2015-2022 Redistributable。这还不是最终的“只下载 Release 即可运行”形态；后续需要用 app-local 运行库或静态 CRT 补齐。
+Windows 构建当前**没有内置 VC++ 运行库**，运行前需要目标机器已安装 Microsoft Visual C++ 2015-2022 Redistributable。Windows x64 已有 GitHub Actions 完整测试记录，但测试 runner 自带 VC 运行库，因此这还不等于干净机器验收，也不是最终的“只下载 Release 即可运行”形态；后续需要用 app-local 运行库或静态 CRT 补齐。
 
 ## 快速使用
 
