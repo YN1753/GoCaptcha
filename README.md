@@ -11,18 +11,20 @@ GoCaptcha 是 [ddddocr](https://github.com/sml2h3/ddddocr) 默认验证码识别
 
 ## 项目状态
 
-这是一个 **alpha 版本**，Windows 尚未交付。
+这是一个 **alpha 版本**。已打包所有目标平台，但 Windows 和 Linux ARM64 **尚未完成独立干净环境验收**，不能视为正式支持。
 
 | 平台 | 状态 | 说明 |
 |---|---|---|
-| macOS ARM64 | 已验证并发布 | 197/201 与 Python 基准一致，147/201 真实标签准确率 |
-| macOS x64 | 已验证并发布 | Apple Silicon + Rosetta 验证；195/201 一致，145/201 准确率；物理 Intel 未测 |
-| Linux x64 | 已验证并发布 | Ubuntu 24.04 原生验证；196/201 一致，146/201 准确率；glibc 2.27+ |
-| Linux ARM64 | 未交付 | 尚未完成运行时资产和真实验收 |
-| Windows x64 | 未交付 | 运行时加载器、VC++ 运行库方案尚未完成 |
-| Windows ARM64 | 未交付 | 暂不声明支持 |
+| macOS ARM64 | 已验证 | 197/201 与 Python 基准一致，147/201 真实标签准确率 |
+| macOS x64 | 已验证（Rosetta） | 195/201 一致，145/201 准确率；物理 Intel 未测 |
+| Linux x64 | 已验证 | Ubuntu 24.04 原生验证；196/201 一致，146/201 准确率；glibc 2.27+ |
+| Linux ARM64 | 已打包，未验证 | 交叉构建，尚未在 ARM64 Linux 上真实运行 |
+| Windows x64 | 已打包，未验证 | 依赖系统 VC++ 运行库；CI 构建/冒烟不等同干净机器验收 |
+| Windows ARM64 | 已打包，未验证 | 仅交叉构建，尚未真实运行 |
 
 验收测试使用 201 张带标签的验证码，数据集来源和已知差异见 [testdata/README.md](testdata/README.md)。
+
+Windows 构建当前**没有内置 VC++ 运行库**，运行前需要目标机器已安装 Microsoft Visual C++ 2015-2022 Redistributable。这还不是最终的“只下载 Release 即可运行”形态；后续需要用 app-local 运行库或静态 CRT 补齐。
 
 ## 快速使用
 

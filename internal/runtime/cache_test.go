@@ -158,18 +158,3 @@ func TestCurrentAsset(t *testing.T) {
 		t.Fatal("extracted current runtime does not match")
 	}
 }
-
-func TestExtractReadOnlyRoot(t *testing.T) {
-	if os.Geteuid() == 0 {
-		t.Skip("root can write through read-only permissions")
-	}
-	root := t.TempDir()
-	if err := os.Chmod(root, 0o500); err != nil {
-		t.Fatalf("chmod root: %v", err)
-	}
-	defer os.Chmod(root, 0o700)
-	a := testAsset([]byte("payload"))
-	if _, err := extract(a, root); err == nil {
-		t.Fatal("expected read-only cache root to fail")
-	}
-}

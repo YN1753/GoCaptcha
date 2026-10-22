@@ -42,7 +42,7 @@ func extract(a asset, cacheRoot string) (string, error) {
 	if a.Key == "" || a.Filename == "" || len(a.Data) == 0 {
 		return "", errors.New("内置运行时资源为空")
 	}
-	if filepath.Base(a.Filename) != a.Filename {
+	if filepath.Base(a.Filename) != a.Filename || strings.ContainsAny(a.Filename, `/\\`) {
 		return "", errors.New("内置运行时文件名非法")
 	}
 	expected := strings.ToLower(a.SHA256)
@@ -105,9 +105,23 @@ func extract(a asset, cacheRoot string) (string, error) {
 	}
 
 	if err := os.Rename(tempName, target); err != nil {
-		// Another process may have completed the same content-addressed write.
+		// Windows cannot rename over an existing file. If another process
+		// completed the same content-addressed write, reuse it; otherwise
+		// replace a corrupt target and retry.
 		if matches, verifyErr := fileMatches(target, expected); verifyErr == nil && matches {
 			return target, nil
+		}
+		if removeErr := os.Remove(target); removeErr == nil {
+			if retryErr := os.Rename(tempName, target); retryErr == nil {
+				matches, verifyErr := fileMatches(target, expected)
+				if verifyErr != nil {
+					return "", fmt.Errorf("无法校验运行时缓存 %q: %w", target, verifyErr)
+				}
+				if !matches {
+					return "", errors.New("释放后的运行时文件校验失败")
+				}
+				return target, nil
+			}
 		}
 		return "", fmt.Errorf("无法写入运行时缓存 %q: %w", target, err)
 	}

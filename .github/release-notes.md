@@ -1,14 +1,17 @@
 # GoCaptcha release
 
-这是 GoCaptcha 的 alpha 发布，当前包含已经完成真实验收的 macOS ARM64、macOS x64 和 Linux x64。
+这是 GoCaptcha 的 alpha 发布，包含全部目标平台的构建产物，但验收程度不同。
 
 ## 支持平台
 
-- macOS 13.4+ ARM64
-- macOS 13.4+ x86_64（Rosetta 验证；物理 Intel 尚未测试）
-- Linux x86_64，glibc 2.27+
+- macOS 13.4+ ARM64：已验证
+- macOS 13.4+ x86_64：Rosetta 验证；物理 Intel 未测试
+- Linux x86_64，glibc 2.27+：已验证
+- Linux ARM64：已打包，未验证
+- Windows x64：已打包，未验证；依赖系统 VC++ 运行库
+- Windows ARM64：已打包，未验证
 
-Windows、Linux ARM64 和 Beta 模型不在本次发布中。
+Beta 模型不在本次发布中。
 
 ## 使用
 
@@ -33,6 +36,7 @@ chmod +x ./ddddocr
 - macOS 未签名、未公证；需要手动移除 quarantine。
 - Go JPEG 解码与 Pillow/libjpeg 存在像素差异，少量 JPEG 结果可能与 Python 基准不同；各平台真实标签准确率见 `testdata/README.md`。
 - WebP、BMP、TIFF 尚未支持。
-- Windows 和 Linux ARM64 尚未交付；本 Release 不应被理解为已完成全部平台验收。
+- Windows 需要系统 VC++ 2015-2022 运行库，当前未内置。
+- Windows 和 Linux ARM64 未完成独立干净环境验收；本 Release 不应被理解为已完成全部平台验收。
 
 模型和第三方许可证见发布包中的 `LICENSES/` 与 `THIRD_PARTY_NOTICES.md`。

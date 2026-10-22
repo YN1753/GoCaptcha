@@ -37,4 +37,4 @@ GoCaptcha 本身使用 MIT License。发布包还包含或链接以下第三方�
 
 ## Windows
 
-当前 Windows 版本尚未交付，发布包不包含 Windows VC++ 运行库。后续 Windows 支持必须明确 app-local 运行库或静态 CRT 方案，并附带对应微软许可条款。
+Windows x64/ARM64 当前是**未完成干净环境验收的实验构建**。发布包包含官方 ONNX Runtime Windows DLL，但不包含 Microsoft Visual C++ 运行库；运行时需要目标系统已有 VC++ 2015-2022 Redistributable。后续正式支持必须补 app-local 运行库或静态 CRT，并附带微软许可条款。

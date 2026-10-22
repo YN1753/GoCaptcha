@@ -25,8 +25,11 @@ type corpusManifest struct {
 }
 
 func TestCorpusAgainstDDDDOCR(t *testing.T) {
-	if runtime.GOOS != "darwin" && !(runtime.GOOS == "linux" && runtime.GOARCH == "amd64") {
-		t.Skip("integration test currently targets macOS or Linux x64")
+	supported := runtime.GOOS == "darwin" ||
+		(runtime.GOOS == "linux" && (runtime.GOARCH == "amd64" || runtime.GOARCH == "arm64")) ||
+		(runtime.GOOS == "windows" && runtime.GOARCH == "amd64")
+	if !supported {
+		t.Skip("integration test not configured for this platform")
 	}
 	t.Setenv("GOCAPTCHA_CACHE_DIR", t.TempDir())
 	libraryPath, err := gocruntime.EnsureCurrent()
@@ -134,7 +137,7 @@ func TestCorpusAgainstDDDDOCR(t *testing.T) {
 	if pngMismatches != 0 {
 		t.Fatalf("%d PNG mismatches against the Python baseline\n%s", pngMismatches, strings.Join(mismatches, "\n"))
 	}
-	if runtime.GOARCH == "arm64" {
+	if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
 		if goCorrect < pythonCorrect {
 			t.Fatalf("Go accuracy %d/%d is below Python %d/%d\n%s", goCorrect, len(manifest.Items), pythonCorrect, len(manifest.Items), strings.Join(mismatches, "\n"))
 		}

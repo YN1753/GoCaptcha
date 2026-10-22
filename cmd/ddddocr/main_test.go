@@ -12,8 +12,11 @@ import (
 )
 
 func TestRunYzm1(t *testing.T) {
-	if runtime.GOOS != "darwin" && !(runtime.GOOS == "linux" && runtime.GOARCH == "amd64") {
-		t.Skip("CLI smoke test currently targets macOS or Linux x64")
+	supported := runtime.GOOS == "darwin" ||
+		(runtime.GOOS == "linux" && (runtime.GOARCH == "amd64" || runtime.GOARCH == "arm64")) ||
+		(runtime.GOOS == "windows" && runtime.GOARCH == "amd64")
+	if !supported {
+		t.Skip("CLI smoke test not configured for this platform")
 	}
 	t.Setenv("GOCAPTCHA_CACHE_DIR", t.TempDir())
 	imagePath := extractYzm1(t)

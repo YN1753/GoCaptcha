@@ -24,7 +24,7 @@ type Result struct {
 }
 
 type Engine struct {
-	handle     uintptr
+	library    *library
 	api        uintptr
 	env        uintptr
 	options    uintptr
@@ -43,12 +43,12 @@ func New(libraryPath string, model []byte) (*Engine, error) {
 		return nil, errors.New("inference: empty model")
 	}
 
-	handle, err := purego.Dlopen(libraryPath, purego.RTLD_NOW|purego.RTLD_LOCAL)
+	lib, err := openLibrary(libraryPath)
 	if err != nil {
-		return nil, fmt.Errorf("inference: load ONNX Runtime %q: %w", libraryPath, err)
+		return nil, fmt.Errorf("inference: %w", err)
 	}
 
-	engine := &Engine{handle: handle}
+	engine := &Engine{library: lib}
 	ready := false
 	defer func() {
 		if !ready {
@@ -56,7 +56,7 @@ func New(libraryPath string, model []byte) (*Engine, error) {
 		}
 	}()
 
-	symbol, err := purego.Dlsym(handle, "OrtGetApiBase")
+	symbol, err := lib.symbol("OrtGetApiBase")
 	if err != nil {
 		return nil, fmt.Errorf("inference: find OrtGetApiBase: %w", err)
 	}
@@ -250,9 +250,9 @@ func (e *Engine) Close() error {
 			e.call(ortAPIReleaseEnv, e.env)
 			e.env = 0
 		}
-		if e.handle != 0 {
-			e.closeErr = purego.Dlclose(e.handle)
-			e.handle = 0
+		if e.library != nil {
+			e.closeErr = e.library.close()
+			e.library = nil
 		}
 	})
 	return e.closeErr

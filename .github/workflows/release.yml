@@ -21,14 +21,38 @@ jobs:
             goos: darwin
             goarch: arm64
             assets_dir: darwin_arm64
+            binary: ddddocr
+            archive: gocaptcha-darwin-arm64.tar.gz
           - os: macos-14
             goos: darwin
             goarch: amd64
             assets_dir: darwin_amd64
+            binary: ddddocr
+            archive: gocaptcha-darwin-amd64.tar.gz
           - os: ubuntu-24.04
             goos: linux
             goarch: amd64
             assets_dir: linux_amd64
+            binary: ddddocr
+            archive: gocaptcha-linux-amd64.tar.gz
+          - os: ubuntu-24.04
+            goos: linux
+            goarch: arm64
+            assets_dir: linux_arm64
+            binary: ddddocr
+            archive: gocaptcha-linux-arm64.tar.gz
+          - os: windows-2022
+            goos: windows
+            goarch: amd64
+            assets_dir: windows_amd64
+            binary: ddddocr.exe
+            archive: gocaptcha-windows-amd64.zip
+          - os: windows-2022
+            goos: windows
+            goarch: arm64
+            assets_dir: windows_arm64
+            binary: ddddocr.exe
+            archive: gocaptcha-windows-arm64.zip
     steps:
       - uses: actions/checkout@v4
 
@@ -41,6 +65,7 @@ jobs:
         run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
 
       - name: Build
+        shell: bash
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
@@ -49,20 +74,29 @@ jobs:
           mkdir -p package/LICENSES
           go build -trimpath \
             -ldflags "-s -w -X main.version=${VERSION}" \
-            -o package/ddddocr ./cmd/ddddocr
+            -o "package/${{ matrix.binary }}" ./cmd/ddddocr
           cp README.md LICENSE THIRD_PARTY_NOTICES.md package/
           cp -R LICENSES/. package/LICENSES/
           cp "internal/runtime/assets/${{ matrix.assets_dir }}/LICENSE" \
             "package/LICENSES/onnxruntime-${{ matrix.goos }}-${{ matrix.goarch }}-LICENSE.txt"
           cp "internal/runtime/assets/${{ matrix.assets_dir }}/ThirdPartyNotices.txt" \
             "package/LICENSES/onnxruntime-${{ matrix.goos }}-${{ matrix.goarch }}-ThirdPartyNotices.txt"
-          tar -C package -czf "gocaptcha-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz" .
+
+      - name: Package tar.gz
+        if: runner.os != 'Windows'
+        shell: bash
+        run: tar -C package -czf "${{ matrix.archive }}" .
+
+      - name: Package zip
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Compress-Archive -Path package\* -DestinationPath "${{ matrix.archive }}"
 
       - name: Upload package
         uses: actions/upload-artifact@v4
         with:
           name: gocaptcha-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: gocaptcha-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
+          path: ${{ matrix.archive }}
           if-no-files-found: error
           retention-days: 7
 
@@ -83,7 +117,7 @@ jobs:
       - name: Checksums
         run: |
           cd dist
-          sha256sum *.tar.gz > SHA256SUMS
+          sha256sum * > SHA256SUMS
           cat SHA256SUMS
 
       - name: Publish GitHub release
@@ -91,7 +125,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release create "$GITHUB_REF_NAME" \
-            dist/*.tar.gz dist/SHA256SUMS \
+            dist/*.tar.gz dist/*.zip dist/SHA256SUMS \
             --title "GoCaptcha $GITHUB_REF_NAME" \
             --notes-file .github/release-notes.md \
             --prerelease
