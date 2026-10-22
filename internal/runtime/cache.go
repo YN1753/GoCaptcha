@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 type asset struct {
@@ -73,6 +74,21 @@ func extract(a asset, cacheRoot string) (string, error) {
 		return "", fmt.Errorf("无法创建运行时缓存目录 %q: %w", directory, err)
 	}
 
+	release, err := acquireLock(directory)
+	if err != nil {
+		return "", fmt.Errorf("无法锁定运行时缓存: %w", err)
+	}
+	defer release()
+
+	// Re-check under the lock: another process may have completed the write.
+	matches, err = fileMatches(target, expected)
+	if err != nil {
+		return "", fmt.Errorf("无法检查运行时缓存 %q: %w", target, err)
+	}
+	if matches {
+		return target, nil
+	}
+
 	temp, err := os.CreateTemp(directory, "."+a.Filename+".tmp-")
 	if err != nil {
 		return "", fmt.Errorf("无法创建运行时缓存临时文件: %w", err)
@@ -134,6 +150,29 @@ func extract(a asset, cacheRoot string) (string, error) {
 		return "", errors.New("释放后的运行时文件校验失败")
 	}
 	return target, nil
+}
+
+func acquireLock(directory string) (func(), error) {
+	lockPath := filepath.Join(directory, ".lock")
+	deadline := time.Now().Add(30 * time.Second)
+	for {
+		file, err := os.OpenFile(lockPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
+		if err == nil {
+			file.Close()
+			return func() { _ = os.Remove(lockPath) }, nil
+		}
+		if !errors.Is(err, os.ErrExist) {
+			return nil, err
+		}
+		if info, statErr := os.Stat(lockPath); statErr == nil && time.Since(info.ModTime()) > 30*time.Second {
+			_ = os.Remove(lockPath)
+			continue
+		}
+		if time.Now().After(deadline) {
+			return nil, errors.New("等待运行时缓存锁超时")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
 }
 
 func fileMatches(path, expected string) (bool, error) {
