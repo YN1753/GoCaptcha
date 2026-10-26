@@ -51,11 +51,11 @@ func (r *Recognizer) Recognize(imageData []byte) (string, error) {
 	}
 	img, err := preprocess.Decode(bytes.NewReader(imageData))
 	if err != nil {
-		return "", fmt.Errorf("captcha: decode image: %w", err)
+		return "", fmt.Errorf("captcha: %w", err)
 	}
 	tensor, err := preprocess.Preprocess(img)
 	if err != nil {
-		return "", fmt.Errorf("captcha: preprocess image: %w", err)
+		return "", fmt.Errorf("captcha: %w", err)
 	}
 	result, err := r.engine.Run(tensor.Data, tensor.Height, tensor.Width)
 	if err != nil {

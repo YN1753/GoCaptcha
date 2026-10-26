@@ -31,11 +31,16 @@ func main() {
 }
 
 func run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
+	if len(args) > 0 && args[0] == "serve" {
+		return runServer(args[1:], stderr)
+	}
+
 	flags := flag.NewFlagSet("ddddocr", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	showVersion := flags.Bool("version", false, "显示版本信息")
 	flags.Usage = func() {
 		fmt.Fprintln(stderr, "用法: ddddocr [--version] <图片路径>")
+		fmt.Fprintln(stderr, "      ddddocr serve [--addr 127.0.0.1:8080] [--max-bytes 8388608] [--cors-origin ORIGIN]")
 		fmt.Fprintln(stderr, "  <图片路径> 为 - 时从标准输入读取")
 		flags.PrintDefaults()
 	}

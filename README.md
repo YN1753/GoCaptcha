@@ -143,6 +143,41 @@ func main() {
 
 `New` 只加载一次模型；同一个 `Recognizer` 可以复用。`Recognize` 不修改共享识别状态，可以并发调用；`Close` 不要与 `Recognize` 并发执行。首次调用会把内嵌的 ONNX Runtime 释放到用户缓存目录，设置 `GOCAPTCHA_CACHE_DIR` 可以改变缓存根目录。
 
+## HTTP API
+
+除了 Go 包，也可以启动本地 HTTP 服务，让其他进程或前端后端调用：
+
+```bash
+./ddddocr serve --addr 127.0.0.1:8080
+```
+
+```bash
+# 原始图片字节
+curl --data-binary @captcha.png \
+  -H 'Content-Type: image/png' \
+  http://127.0.0.1:8080/v1/ocr
+
+# multipart 上传
+curl -F 'image=@captcha.png' http://127.0.0.1:8080/v1/ocr
+
+# 健康检查
+curl http://127.0.0.1:8080/healthz
+```
+
+返回：
+
+```json
+{"text":"3n3d"}
+```
+
+服务启动时加载一次模型，后续请求复用；默认只监听 `127.0.0.1:8080`，不默认对公网开放。可用参数：
+
+- `--addr`：监听地址；
+- `--max-bytes`：单张图片最大字节数，默认 8MB；
+- `--cors-origin`：需要浏览器直接跨域调用时设置，例如 `http://localhost:5173`；留空不启用 CORS。
+
+服务没有身份认证。不要直接暴露到公网；如果要放到服务器上给前端使用，建议由自己的 Go 后端代调，或在前面加鉴权/反向代理。
+
 ## 目标站点验证码的适配
 
 “通用”是指模型不绑定某个网站，不是对任意验证码都保证准确率。自带的 201 张样本上，默认模型真实标签准确率是 147/201；目标站点的字体、噪声和交互方式不同，准确率需要单独测。

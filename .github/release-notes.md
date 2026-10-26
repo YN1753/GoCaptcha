@@ -50,6 +50,15 @@ Windows 当前需要系统安装 Microsoft Visual C++ 2015-2022 Redistributable�
 
 缺少 `MSVCP140.dll` / `VCRUNTIME140.dll` 时安装对应架构运行库。Windows x64 有 CI 完整测试记录，但 runner 自带 VC 运行库，干净环境验收仍未完成；Windows ARM64 未真实运行。
 
+### HTTP API
+
+```bash
+./ddddocr serve --addr 127.0.0.1:8080
+curl --data-binary @captcha.png -H 'Content-Type: image/png' http://127.0.0.1:8080/v1/ocr
+```
+
+返回 `{"text":"..."}`。默认只监听 loopback，无认证；跨域浏览器调用需要 `--cors-origin`。
+
 ### 通用
 
 ```bash
