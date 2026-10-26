@@ -26,31 +26,83 @@ GoCaptcha 是 [ddddocr](https://github.com/sml2h3/ddddocr) 默认验证码识别
 
 Windows 构建当前**没有内置 VC++ 运行库**，运行前需要目标机器已安装 Microsoft Visual C++ 2015-2022 Redistributable。Windows x64 已有 GitHub Actions 完整测试记录，但测试 runner 自带 VC 运行库，因此这还不等于干净机器验收，也不是最终的“只下载 Release 即可运行”形态；后续需要用 app-local 运行库或静态 CRT 补齐。
 
-## 快速使用
+## 下载与使用
 
-从 [Releases](https://github.com/YN1753/GoCaptcha/releases) 下载对应平台压缩包，解压后直接运行：
+从 [Releases](https://github.com/YN1753/GoCaptcha/releases) 下载对应平台文件。每个平台一个压缩包，包内只有一个可执行文件 `ddddocr`（Windows 为 `ddddocr.exe`）以及 README、许可证和第三方声明。
+
+| 平台 | 下载文件 | 状态 |
+|---|---|---|
+| macOS Apple Silicon | `gocaptcha-darwin-arm64.tar.gz` | 已验证 |
+| macOS Intel / Rosetta | `gocaptcha-darwin-amd64.tar.gz` | Rosetta 已验证；物理 Intel 未测 |
+| Linux x86_64 | `gocaptcha-linux-amd64.tar.gz` | 已验证 |
+| Linux ARM64 | `gocaptcha-linux-arm64.tar.gz` | 已打包，未验证 |
+| Windows x64 | `gocaptcha-windows-amd64.zip` | CI 测试通过；干净环境未验收 |
+| Windows ARM64 | `gocaptcha-windows-arm64.zip` | 已打包，未验证 |
+
+### macOS（ARM64 / x64）
 
 ```bash
-# macOS 首次运行前移除 quarantine
-xattr -d com.apple.quarantine ./ddddocr
-
-./ddddocr image.png
-cat image.png | ./ddddocr -
+tar -xzf gocaptcha-darwin-arm64.tar.gz   # Intel 用 darwin-amd64
+cd ./
+xattr -d com.apple.quarantine ./ddddocr  # 首次运行前执行一次
+./ddddocr /path/to/captcha.png
 ./ddddocr --version
 ```
 
-Linux 如果解压后没有执行权限：
+macOS 包没有 Developer ID 签名和公证。如果系统仍拦截，可在“系统设置 → 隐私与安全性”中允许，或继续使用 `xattr` 命令。企业 MDM 环境可能不允许加载未签名程序。
+
+### Linux（x64 / ARM64）
 
 ```bash
+tar -xzf gocaptcha-linux-amd64.tar.gz   # ARM64 用 linux-arm64
 chmod +x ./ddddocr
+./ddddocr /path/to/captcha.png
+./ddddocr --version
 ```
 
-首次运行会把内嵌的 ONNX Runtime 释放到：
+要求 glibc 2.27+，Alpine/musl 不支持。首次运行会把内嵌的 ONNX Runtime 释放到 `$XDG_CACHE_HOME/gocaptcha/` 或 `~/.cache/gocaptcha/`。
 
-- macOS：`~/Library/Caches/gocaptcha/`
-- Linux：`$XDG_CACHE_HOME/gocaptcha/` 或 `~/.cache/gocaptcha/`
+### Windows（x64 / ARM64）
 
-后续运行会校验缓存文件 SHA-256 并复用。设置了 `GOCAPTCHA_CACHE_DIR` 时，使用该目录作为缓存根目录。
+PowerShell：
+
+```powershell
+Expand-Archive .\gocaptcha-windows-amd64.zip -DestinationPath .\gocaptcha
+cd .\gocaptcha
+.\ddddocr.exe .\captcha.png
+.\ddddocr.exe --version
+```
+
+Windows ARM64 使用 `gocaptcha-windows-arm64.zip` 和 `ddddocr.exe`；当前未在 ARM64 Windows 上真实运行。
+
+**Windows 当前需要系统已安装 Microsoft Visual C++ 2015-2022 Redistributable**，发布包没有内置 VC 运行库：
+
+- x64：https://aka.ms/vs/17/release/vc_redist.x64.exe
+- ARM64：https://aka.ms/vs/17/release/vc_redist.arm64.exe
+
+如果启动时报缺少 `MSVCP140.dll`、`VCRUNTIME140.dll` 等，安装对应架构的 VC++ Redistributable 后重试。x64 已有 CI 测试，但测试 runner 自带 VC 运行库，不能替代干净 Windows 环境验收。未签名程序可能触发 SmartScreen，选择“更多信息 → 仍要运行”。Windows 建议直接传图片路径；PowerShell 管道传二进制文件不可靠。
+
+### 通用用法
+
+```bash
+./ddddocr image.png          # 文件路径
+cat image.png | ./ddddocr -  # 标准输入（macOS/Linux）
+./ddddocr --version          # 版本和模型信息
+```
+
+识别结果输出到标准输出，每张图一行。首次运行会释放 ONNX Runtime，后续运行校验 SHA-256 并复用缓存。设置 `GOCAPTCHA_CACHE_DIR` 可以覆盖缓存根目录。程序完全本地运行，不上传图片、不调用远程 OCR API。
+
+下载后可校验压缩包：
+
+```bash
+# macOS / Linux
+shasum -a 256 -c SHA256SUMS
+```
+
+```powershell
+# Windows：手动比对 SHA256SUMS 与 Get-FileHash 的结果
+Get-FileHash .\gocaptcha-windows-amd64.zip -Algorithm SHA256
+```
 
 ## 支持范围
 

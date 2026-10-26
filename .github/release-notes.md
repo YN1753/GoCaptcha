@@ -13,23 +13,51 @@
 
 Beta 模型不在本次发布中。
 
-## 使用
+## 各平台使用
+
+### macOS ARM64 / x64
 
 ```bash
-tar -xzf gocaptcha-darwin-arm64.tar.gz
+tar -xzf gocaptcha-darwin-arm64.tar.gz   # Intel 用 darwin-amd64
 xattr -d com.apple.quarantine ./ddddocr
 ./ddddocr image.png
 ```
 
-Linux：
+macOS 未签名、未公证；首次运行前执行 `xattr` 命令。
+
+### Linux x64 / ARM64
 
 ```bash
-tar -xzf gocaptcha-linux-amd64.tar.gz
+tar -xzf gocaptcha-linux-amd64.tar.gz   # ARM64 用 linux-arm64
 chmod +x ./ddddocr
 ./ddddocr image.png
 ```
 
-首次运行会将内嵌的 ONNX Runtime 释放到用户缓存目录，之后校验 SHA-256 并复用。程序不访问网络，不调用远程 OCR API。
+要求 glibc 2.27+，不支持 Alpine/musl。
+
+### Windows x64 / ARM64
+
+```powershell
+Expand-Archive .\gocaptcha-windows-amd64.zip -DestinationPath .\gocaptcha
+cd .\gocaptcha
+.\ddddocr.exe image.png
+```
+
+Windows 当前需要系统安装 Microsoft Visual C++ 2015-2022 Redistributable：
+
+- x64：https://aka.ms/vs/17/release/vc_redist.x64.exe
+- ARM64：https://aka.ms/vs/17/release/vc_redist.arm64.exe
+
+缺少 `MSVCP140.dll` / `VCRUNTIME140.dll` 时安装对应架构运行库。Windows x64 有 CI 完整测试记录，但 runner 自带 VC 运行库，干净环境验收仍未完成；Windows ARM64 未真实运行。
+
+### 通用
+
+```bash
+./ddddocr --version
+cat image.png | ./ddddocr -   # macOS/Linux
+```
+
+首次运行自动释放 ONNX Runtime 到用户缓存；设置 `GOCAPTCHA_CACHE_DIR` 可覆盖缓存根目录。程序完全本地运行，不访问网络。
 
 ## 已知限制
 
