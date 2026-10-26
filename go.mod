@@ -1,4 +1,4 @@
-module gocaptcha
+module github.com/YN1753/GoCaptcha
 
 go 1.25.0
 

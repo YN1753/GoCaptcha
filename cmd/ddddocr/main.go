@@ -8,11 +8,11 @@ import (
 	"os"
 	stdruntime "runtime"
 
-	"gocaptcha/assets"
-	"gocaptcha/internal/inference"
-	"gocaptcha/internal/postprocess"
-	"gocaptcha/internal/preprocess"
-	gocruntime "gocaptcha/internal/runtime"
+	"github.com/YN1753/GoCaptcha/assets"
+	"github.com/YN1753/GoCaptcha/internal/inference"
+	"github.com/YN1753/GoCaptcha/internal/postprocess"
+	"github.com/YN1753/GoCaptcha/internal/preprocess"
+	gocruntime "github.com/YN1753/GoCaptcha/internal/runtime"
 )
 
 var version = "0.1.0-dev"

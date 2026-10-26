@@ -104,6 +104,59 @@ shasum -a 256 -c SHA256SUMS
 Get-FileHash .\gocaptcha-windows-amd64.zip -Algorithm SHA256
 ```
 
+## 作为 Go 库使用
+
+模块路径已迁移为 `github.com/YN1753/GoCaptcha`。应用后端可以直接在进程内调用，不需要启动 CLI 子进程：
+
+```bash
+go get github.com/YN1753/GoCaptcha@v0.1.0-alpha.7
+```
+
+```go
+package main
+
+import (
+	"fmt"
+	"os"
+
+	"github.com/YN1753/GoCaptcha/captcha"
+)
+
+func main() {
+	recognizer, err := captcha.New()
+	if err != nil {
+		panic(err)
+	}
+	defer recognizer.Close()
+
+	imageData, err := os.ReadFile("captcha.png")
+	if err != nil {
+		panic(err)
+	}
+	text, err := recognizer.Recognize(imageData)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(text)
+}
+```
+
+`New` 只加载一次模型；同一个 `Recognizer` 可以复用。`Recognize` 不修改共享识别状态，可以并发调用；`Close` 不要与 `Recognize` 并发执行。首次调用会把内嵌的 ONNX Runtime 释放到用户缓存目录，设置 `GOCAPTCHA_CACHE_DIR` 可以改变缓存根目录。
+
+## 目标站点验证码的适配
+
+“通用”是指模型不绑定某个网站，不是对任意验证码都保证准确率。自带的 201 张样本上，默认模型真实标签准确率是 147/201；目标站点的字体、噪声和交互方式不同，准确率需要单独测。
+
+建议不要一开始就阻塞在样本收集上：
+
+1. 先用通用模型跑打卡流程；
+2. 每次获取验证码时把图片字节保存到本地，例如 `data/captcha/日期/任务-时间.png`；
+3. 同时记录识别文本、提交结果和失败原因；
+4. 提交成功说明识别正确；提交失败时把图片和识别结果留下来人工纠正；
+5. 积累 20–50 张后跑一遍批量评估，再决定是否切换模型或训练自定义模型。
+
+也可以用开发期的“取一张验证码”页面：后端获取图片并展示，人工输入正确文本后保存为 `图片 + 标签`。不要保存账号密码、Cookie 或完整请求头到样本目录；这些样本只留在本地，并注意目标站点的使用条款和访问频率限制。
+
 ## 支持范围
 
 当前支持 PNG、JPEG、GIF（Go 标准库解码器）。WebP、BMP、TIFF 尚未接入。
